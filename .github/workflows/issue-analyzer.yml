@@ -103,26 +103,47 @@ jobs:
 
             ## Paso 5: Escribe el comentario diagnóstico
 
-            Escribe el diagnóstico en /tmp/issue-diagnosis.md con exactamente este formato:
+            Escribe el diagnóstico en /tmp/issue-diagnosis.md usando GitHub Flavored Markdown (GFM).
+            El archivo debe poder renderizarse correctamente en la interfaz de GitHub.
+            Usa: encabezados ##/###, tablas GFM, código inline con backticks `así`, bloques de código
+            con triple backtick, negrita **texto**, y la alerta > [!NOTE] / > [!WARNING] cuando aplique.
+
+            El contenido debe seguir exactamente esta estructura:
 
             ## 🔍 Diagnóstico Automático
 
-            **Tipo:** [Bug / Mejora / Nueva funcionalidad / Pregunta / Inválido]
-            **Severidad:** [Alta / Media / Baja / N/A]
-            **Componentes afectados:** [archivos y funciones específicas, ej: `game.js` → `rotateCW()`, `loop()`]
+            | Campo | Detalle |
+            |---|---|
+            | **Tipo** | [Bug / Mejora / Nueva funcionalidad / Pregunta / Inválido] |
+            | **Severidad** | [Alta / Media / Baja / N/A] |
+            | **Componentes afectados** | [`game.js`] [`style.css`] [`index.html`] — lista solo los relevantes |
+            | **Funciones clave** | [`rotateCW()`] [`loop()`] — lista solo las relevantes, o "N/A" |
 
             ### Análisis del problema
-            [Descripción técnica precisa. Si es un bug, describe el comportamiento actual vs. el esperado.
-            Menciona qué parte concreta del código es relevante.]
+
+            [Descripción técnica precisa en 2-4 oraciones. Si es un bug, describe el comportamiento
+            actual vs. el esperado. Si es una feature, describe qué falta. Menciona qué parte del
+            código es relevante usando `backticks` para nombres de funciones y variables.]
+
+            > [!NOTE]
+            > [Agrega aquí una nota técnica relevante si aplica, por ejemplo: "Este comportamiento
+            > está controlado por la constante `dropInterval` en `game.js`." Omite este bloque si no hay nada importante que destacar.]
 
             ### Contexto técnico relevante
-            [Referencia a partes específicas de la arquitectura que apliquen:
-            bucle requestAnimationFrame, sistema de puntuación LINE_SCORES, lógica de rotación/wall-kicks,
-            pieza fantasma, dropInterval, constantes configurables, estructura DOM, etc.]
+
+            [1-3 párrafos cortos. Referencia partes específicas de la arquitectura:
+            bucle `requestAnimationFrame` → `loop(ts)`, sistema de puntuación `LINE_SCORES`,
+            lógica de rotación `rotateCW()` con wall-kicks, pieza fantasma, `dropInterval`,
+            constantes configurables al tope de `game.js`, estructura DOM en `index.html`, etc.
+            Usa `backticks` para todos los identificadores de código.]
 
             ### Enfoque sugerido para la solución
-            [Orientación arquitectónica: qué archivo(s) modificar, qué función, qué enfoque tomar.
-            No escribas código, solo orientación de alto nivel.]
+
+            [Orientación arquitectónica en 2-5 puntos usando lista markdown:
+            - Qué archivo(s) modificar
+            - Qué función tocar o agregar
+            - Qué enfoque tomar (sin escribir código)
+            - Posibles efectos secundarios a tener en cuenta]
 
             ---
             *Análisis generado automáticamente por Claude · TIMESTAMP_UTC*
