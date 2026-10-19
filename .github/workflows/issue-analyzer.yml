@@ -1,0 +1,136 @@
+name: Issue Analyzer (Claude AI)
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: issue-analyzer-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-issue:
+    if: github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Ensure labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "bug"             --color "d73a4a" --description "Algo no funciona correctamente"               --force
+          gh label create "enhancement"     --color "a2eeef" --description "Mejora de funcionalidad existente"            --force
+          gh label create "feature-request" --color "0075ca" --description "Solicitud de nueva funcionalidad"             --force
+          gh label create "question"        --color "d876e3" --description "Pregunta o solicitud de información"          --force
+          gh label create "gameplay"        --color "e4e669" --description "Mecánicas, puntuación o controles del juego"  --force
+          gh label create "ui"              --color "c2e0c6" --description "Visuales, canvas o CSS"                       --force
+          gh label create "performance"     --color "f9d0c4" --description "Velocidad, FPS u optimización"                --force
+          gh label create "documentation"   --color "0052cc" --description "Documentación o comentarios de código"        --force
+          gh label create "invalid"         --color "e4e4e4" --description "No accionable o fuera de alcance"             --force
+
+      - name: Analyze issue with Claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: '--allowedTools "Bash"'
+          prompt: |
+            Eres un asistente técnico para el repositorio de Tetris en JavaScript vanilla.
+            Tu tarea es analizar el issue #${{ github.event.issue.number }} y producir un diagnóstico estructurado.
+
+            ## Paso 1: Lee el issue
+
+            Ejecuta este comando para obtener los datos del issue de forma segura:
+
+            gh issue view ${{ github.event.issue.number }} --json number,title,body,labels
+
+            ## Paso 2: Arquitectura del proyecto (contexto)
+
+            El repositorio contiene exactamente tres archivos:
+
+            - **index.html** (59 líneas): estructura DOM únicamente. Canvas principal `#board` de 300×600 px
+              (cuadrícula 10×20, bloques de 30 px). Canvas secundario `#next-canvas` (120×120 px) para la
+              pieza siguiente. Spans `#score`, `#lines`, `#level` para el HUD. Div `#overlay` para estados
+              PAUSE y GAME OVER.
+
+            - **style.css** (164 líneas): tema visual retro/oscuro, fondo #0f0f17. Sin lógica alguna.
+
+            - **game.js** (305 líneas, sin clases, funciones planas y variables de módulo):
+              - Constantes clave: COLS=10, ROWS=20, BLOCK=30, COLORS (7 colores indexados), LINE_SCORES=[0,100,300,500,800]
+              - Piezas: I, O, T, S, Z, J, L definidas como matrices 2D de índices de color
+              - Bucle de juego: requestAnimationFrame → función `loop(ts)`. Acumula tiempo en `dropAccum`;
+                al superar `dropInterval` la pieza baja una fila o se bloquea.
+                `dropInterval = max(100, 1000 − (level−1) × 90)` ms
+              - Rotación: `rotateCW()` transpone y revierte filas. Wall-kicks prueban offsets [0, -1, 1, -2, 2]
+              - Puntuación: LINE_SCORES[lineas_limpiadas] × nivel. Hard drop: +2 pts/fila. Soft drop: +1 pt/fila
+              - Progresión de nivel: cada 10 líneas
+              - Pieza fantasma (ghost piece): proyección visual de dónde caerá la pieza actual
+
+            ## Paso 3: Selecciona etiquetas apropiadas
+
+            Elige entre 1 y 3 etiquetas de esta taxonomía según el contenido del issue:
+
+            | Etiqueta          | Cuándo aplicarla                                                          |
+            |-------------------|---------------------------------------------------------------------------|
+            | bug               | Algo no funciona: colisión incorrecta, puntuación errónea, crash, etc.    |
+            | enhancement       | Mejora de algo que ya existe (ej: mejorar el sistema de rotación actual)  |
+            | feature-request   | Funcionalidad nueva que no existe (ej: modo multijugador, sonido)         |
+            | question          | Pregunta sobre cómo funciona algo                                         |
+            | gameplay          | Afecta mecánicas: piezas, scoring, controles, velocidad, wall-kicks       |
+            | ui                | Afecta visuales: canvas, CSS, colores, overlay, panel lateral             |
+            | performance       | Afecta rendimiento: FPS, bucle de animación, optimización                 |
+            | documentation     | Documentación, README, CLAUDE.md, comentarios en código                   |
+            | invalid           | No es accionable, spam, duplicado obvio, o fuera del alcance del proyecto |
+
+            ## Paso 4: Aplica las etiquetas
+
+            Ejecuta (reemplaza con las etiquetas que elegiste, separadas por comas sin espacios):
+
+            gh issue edit ${{ github.event.issue.number }} --add-label "etiqueta1,etiqueta2"
+
+            Usa siempre --add-label para preservar etiquetas existentes.
+
+            ## Paso 5: Escribe el comentario diagnóstico
+
+            Escribe el diagnóstico en /tmp/issue-diagnosis.md con exactamente este formato:
+
+            ## 🔍 Diagnóstico Automático
+
+            **Tipo:** [Bug / Mejora / Nueva funcionalidad / Pregunta / Inválido]
+            **Severidad:** [Alta / Media / Baja / N/A]
+            **Componentes afectados:** [archivos y funciones específicas, ej: `game.js` → `rotateCW()`, `loop()`]
+
+            ### Análisis del problema
+            [Descripción técnica precisa. Si es un bug, describe el comportamiento actual vs. el esperado.
+            Menciona qué parte concreta del código es relevante.]
+
+            ### Contexto técnico relevante
+            [Referencia a partes específicas de la arquitectura que apliquen:
+            bucle requestAnimationFrame, sistema de puntuación LINE_SCORES, lógica de rotación/wall-kicks,
+            pieza fantasma, dropInterval, constantes configurables, estructura DOM, etc.]
+
+            ### Enfoque sugerido para la solución
+            [Orientación arquitectónica: qué archivo(s) modificar, qué función, qué enfoque tomar.
+            No escribas código, solo orientación de alto nivel.]
+
+            ---
+            *Análisis generado automáticamente por Claude · TIMESTAMP_UTC*
+
+            Reemplaza TIMESTAMP_UTC con la salida de: date -u '+%Y-%m-%d %H:%M UTC'
+
+            ## Paso 6: Publica el comentario
+
+            gh issue comment ${{ github.event.issue.number }} --body-file /tmp/issue-diagnosis.md
+
+            Ejecuta los pasos en orden. Escribe todo el diagnóstico en español.
