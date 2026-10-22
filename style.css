@@ -244,3 +244,78 @@ kbd {
 #restart-btn:hover {
   background: var(--accent-hover);
 }
+
+/* Secciones del overlay */
+.overlay-section.hidden { display: none; }
+
+/* Botón de pausa básico (esta PR solo pone Reanudar; la PR del menú completo añade más) */
+.pause-btn {
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+.pause-btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+/* Tabla de récords en el panel */
+.scores-table { width: 100%; border-collapse: collapse; }
+.scores-table th { color: var(--label); font-size: 9px; letter-spacing: 1px; text-align: left; padding: 2px 4px; font-weight: 600; }
+.scores-table td { padding: 3px 4px; color: var(--muted); font-family: 'Courier New', Courier, monospace; font-size: 11px; }
+.scores-table td:nth-child(3),
+.scores-table td:nth-child(4) { color: var(--accent); }
+.score-row-new td { color: var(--danger) !important; font-weight: 700; }
+.no-scores { font-size: 10px; color: var(--muted); }
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.clear-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+/* Tabla en overlay — algo más grande */
+#overlay-scores .scores-table td,
+#overlay-scores .scores-table th { font-size: 12px; }
+#overlay-scores { width: 100%; }
+
+/* Formulario para guardar nombre */
+.score-entry { width: 100%; }
+.score-entry.hidden { display: none; }
+.score-entry-prompt { font-size: 12px; color: var(--muted); margin-bottom: 6px; text-align: left; }
+.score-entry-row { display: flex; gap: 6px; }
+#player-name {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--canvas-bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#player-name:focus { border-color: var(--accent); }
+
+/* Título del overlay (clase compartida entre pausa y game over) */
+.overlay-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--danger);
+}
