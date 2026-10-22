@@ -214,7 +214,7 @@ kbd {
   align-items: center;
 }
 
-#overlay-title {
+.overlay-title {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: 4px;
@@ -243,4 +243,75 @@ kbd {
 
 #restart-btn:hover {
   background: var(--accent-hover);
+}
+
+/* Secciones del overlay */
+.overlay-section.hidden { display: none; }
+
+/* Menú de pausa — botones */
+.pause-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.pause-btn {
+  width: 100%;
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s;
+}
+.pause-btn:hover { background: var(--border); }
+.pause-btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.pause-btn--primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+/* Lista de controles dentro del overlay */
+.pause-controls-detail { width: 100%; }
+.pause-controls-detail.hidden { display: none; }
+.pause-controls-detail ul { list-style: none; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.pause-controls-detail li { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+
+/* Selector de nivel inicial */
+.level-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+.level-picker-label { font-size: 10px; letter-spacing: 2px; color: var(--label); font-weight: 600; }
+.level-picker-row { display: flex; align-items: center; gap: 14px; }
+.level-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.level-btn:hover { background: var(--border); }
+.level-val {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 24px;
+  text-align: center;
 }
