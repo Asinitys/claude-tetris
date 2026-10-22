@@ -4,17 +4,6 @@ const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
 
-const COLORS = [
-  null,
-  '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
-  '#ba68c8', // T - purple
-  '#81c784', // S - green
-  '#e57373', // Z - red
-  '#90caf9', // J - pale blue
-  '#ffb74d', // L - orange
-];
-
 const SKIN_COLORS = {
   retro:  [null,'#4dd0e1','#ffd54f','#ba68c8','#81c784','#e57373','#90caf9','#ffb74d'],
   neon:   [null,'#00fff7','#fff700','#e600ff','#00ff55','#ff0033','#0099ff','#ff8800'],
@@ -50,7 +39,7 @@ const themeToggle = document.getElementById('theme-toggle');
 const themeLabel = document.getElementById('theme-label');
 const skinSelect = document.getElementById('skin-select');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, currentSkin, skinColors;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, currentSkin, skinColors, blockHighlight;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -175,6 +164,7 @@ function applyTheme(theme, save) {
   document.documentElement.dataset.theme = isLight ? 'light' : 'dark';
   themeToggle.setAttribute('aria-checked', String(isLight));
   themeLabel.textContent = isLight ? 'Claro' : 'Oscuro';
+  blockHighlight = themeVar('--block-highlight');
   if (save) {
     try { localStorage.setItem('theme', isLight ? 'light' : 'dark'); } catch (e) {}
   }
@@ -195,19 +185,21 @@ function applySkin(name) {
 function drawBlockRetro(context, x, y, color, size) {
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  context.fillStyle = themeVar('--block-highlight');
+  context.fillStyle = blockHighlight;
   context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
 }
 
-function drawBlockNeon(context, x, y, color, size) {
-  context.shadowBlur = 14;
-  context.shadowColor = color;
+function drawBlockNeon(context, x, y, color, size, alpha) {
+  context.save();
+  if (alpha >= 1) {
+    context.shadowBlur = 14;
+    context.shadowColor = color;
+  }
   context.fillStyle = color;
   context.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
   context.fillStyle = 'rgba(255,255,255,0.22)';
   context.fillRect(x * size + 2, y * size + 2, size - 4, 3);
-  context.shadowBlur = 0;
-  context.shadowColor = 'transparent';
+  context.restore();
 }
 
 function drawBlockPastel(context, x, y, color, size) {
@@ -245,12 +237,13 @@ function drawBlockPixel(context, x, y, color, size) {
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
   const color = skinColors[colorIndex];
-  context.globalAlpha = alpha ?? 1;
+  const a = alpha ?? 1;
+  context.globalAlpha = a;
   switch (currentSkin) {
-    case 'neon':   drawBlockNeon(context, x, y, color, size);   break;
-    case 'pastel': drawBlockPastel(context, x, y, color, size); break;
-    case 'pixel':  drawBlockPixel(context, x, y, color, size);  break;
-    default:       drawBlockRetro(context, x, y, color, size);  break;
+    case 'neon':   drawBlockNeon(context, x, y, color, size, a); break;
+    case 'pastel': drawBlockPastel(context, x, y, color, size);  break;
+    case 'pixel':  drawBlockPixel(context, x, y, color, size);   break;
+    default:       drawBlockRetro(context, x, y, color, size);   break;
   }
   context.globalAlpha = 1;
 }
@@ -394,7 +387,7 @@ themeToggle.addEventListener('click', () => {
   themeToggle.blur();
 });
 
-skinSelect.addEventListener('change', () => applySkin(skinSelect.value));
+if (skinSelect) skinSelect.addEventListener('change', () => applySkin(skinSelect.value));
 
 let savedTheme = 'dark';
 try { savedTheme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'; } catch (e) {}
