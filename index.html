@@ -55,13 +55,42 @@
             <span id="theme-label">Oscuro</span>
           </button>
         </div>
+
+        <div class="panel-section" id="scores-section">
+          <span class="label">RÉCORDS</span>
+          <div id="scores-panel"><!-- populated by JS --></div>
+          <button id="clear-scores-btn" class="clear-btn">Borrar</button>
+        </div>
       </aside>
 
       <div id="overlay" class="overlay hidden">
         <div class="overlay-box">
-          <p id="overlay-title">GAME OVER</p>
-          <p id="overlay-score"></p>
-          <button id="restart-btn">Reiniciar</button>
+
+          <!-- PAUSA (sección vacía — otra PR implementa el menú completo) -->
+          <div id="pause-content" class="overlay-section">
+            <p class="overlay-title">PAUSA</p>
+            <button id="restart-btn-pause" class="pause-btn pause-btn--primary">Reanudar</button>
+          </div>
+
+          <!-- GAME OVER -->
+          <div id="gameover-content" class="overlay-section hidden">
+            <p id="overlay-title" class="overlay-title">GAME OVER</p>
+            <p id="overlay-score"></p>
+
+            <div id="score-entry" class="score-entry hidden">
+              <p class="score-entry-prompt">¡Nuevo récord! Ingresa tu nombre:</p>
+              <div class="score-entry-row">
+                <input id="player-name" type="text" maxlength="10"
+                       placeholder="Tu nombre" autocomplete="off" spellcheck="false" />
+                <button id="save-score-btn" class="pause-btn pause-btn--primary">Guardar</button>
+              </div>
+            </div>
+
+            <div id="overlay-scores"></div>
+
+            <button id="restart-btn">Reiniciar</button>
+          </div>
+
         </div>
       </div>
     </div>

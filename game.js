@@ -28,6 +28,9 @@ const PIECES = [
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
+const MAX_SCORES    = 5;
+const LS_SCORES_KEY = 'tetris-highscores';
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -36,13 +39,21 @@ const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
-const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const themeLabel = document.getElementById('theme-label');
+const pauseContent    = document.getElementById('pause-content');
+const gameoverContent = document.getElementById('gameover-content');
+const scoresPanel     = document.getElementById('scores-panel');
+const clearScoresBtn  = document.getElementById('clear-scores-btn');
+const scoreEntryDiv   = document.getElementById('score-entry');
+const playerNameInput = document.getElementById('player-name');
+const saveScoreBtn    = document.getElementById('save-score-btn');
+const overlayScoresDiv = document.getElementById('overlay-scores');
+const restartBtnPause = document.getElementById('restart-btn-pause');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, maxCombo;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -110,6 +121,7 @@ function clearLines() {
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    if (cleared > maxCombo) maxCombo = cleared;
     updateHUD();
   }
 }
@@ -238,25 +250,90 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+function showOverlay(mode) {
+  pauseContent.classList.toggle('hidden', mode !== 'pause');
+  gameoverContent.classList.toggle('hidden', mode !== 'gameover');
+  overlay.classList.remove('hidden');
+}
+
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem(LS_SCORES_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function persistScores(arr) {
+  try { localStorage.setItem(LS_SCORES_KEY, JSON.stringify(arr)); } catch (e) {}
+}
+
+function qualifiesForTop(s) {
+  const scores = loadScores();
+  return scores.length < MAX_SCORES || s >= scores[scores.length - 1].score;
+}
+
+function saveScore(name) {
+  const scores = loadScores();
+  const entry = {
+    name: ((name || '').trim().slice(0, 10)) || 'AAA',
+    score,
+    lines,
+    combo: maxCombo
+  };
+  scores.push(entry);
+  scores.sort((a, b) => b.score - a.score);
+  const rank = scores.indexOf(entry);
+  if (scores.length > MAX_SCORES) scores.pop();
+  persistScores(scores);
+  renderScoresPanel();
+  return rank < MAX_SCORES ? rank : -1;
+}
+
+function buildScoresTable(scores, highlightIdx) {
+  if (!scores.length) return '<p class="no-scores">Sin récords aún</p>';
+  const rows = scores.map((e, i) => {
+    const cls = i === highlightIdx ? ' class="score-row-new"' : '';
+    const safeName = e.name
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<tr${cls}><td>${i + 1}</td><td>${safeName}</td>` +
+           `<td>${e.score.toLocaleString()}</td><td>${(e.combo ?? 0)}x</td></tr>`;
+  }).join('');
+  return `<table class="scores-table">` +
+         `<thead><tr><th>#</th><th>Nombre</th><th>Pts</th><th>Combo</th></tr></thead>` +
+         `<tbody>${rows}</tbody></table>`;
+}
+
+function renderScoresPanel() {
+  scoresPanel.innerHTML = buildScoresTable(loadScores());
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
-  overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
-  overlay.classList.remove('hidden');
+  overlayScore.textContent =
+    `Puntuación: ${score.toLocaleString()} · Líneas: ${lines} · Combo: ${maxCombo}x`;
+
+  if (qualifiesForTop(score)) {
+    scoreEntryDiv.classList.remove('hidden');
+    overlayScoresDiv.innerHTML = '';
+    playerNameInput.value = '';
+    setTimeout(() => playerNameInput.focus(), 50);
+  } else {
+    scoreEntryDiv.classList.add('hidden');
+    overlayScoresDiv.innerHTML = buildScoresTable(loadScores());
+  }
+
+  showOverlay('gameover');
 }
 
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    showOverlay('pause');
   }
 }
 
@@ -283,6 +360,7 @@ function init() {
   level = 1;
   paused = false;
   gameOver = false;
+  maxCombo = 0;
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
@@ -321,6 +399,23 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+restartBtnPause.addEventListener('click', () => { if (paused) togglePause(); });
+
+saveScoreBtn.addEventListener('click', () => {
+  const rank = saveScore(playerNameInput.value);
+  scoreEntryDiv.classList.add('hidden');
+  overlayScoresDiv.innerHTML = buildScoresTable(loadScores(), rank);
+});
+
+playerNameInput.addEventListener('keydown', e => {
+  if (e.code === 'Enter') saveScoreBtn.click();
+});
+
+clearScoresBtn.addEventListener('click', () => {
+  try { localStorage.removeItem(LS_SCORES_KEY); } catch (e) {}
+  renderScoresPanel();
+});
+
 themeToggle.addEventListener('click', () => {
   const isLight = document.documentElement.dataset.theme === 'light';
   applyTheme(isLight ? 'dark' : 'light', true);
@@ -331,4 +426,5 @@ let savedTheme = 'dark';
 try { savedTheme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'; } catch (e) {}
 applyTheme(savedTheme, false);
 
+renderScoresPanel();
 init();
