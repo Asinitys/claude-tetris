@@ -45,6 +45,7 @@
             <li><kbd>↓</kbd> bajar</li>
             <li><kbd>Space</kbd> caída</li>
             <li><kbd>P</kbd> pausa</li>
+            <li><kbd>Esc</kbd> pausa</li>
           </ul>
         </div>
 
@@ -59,9 +60,41 @@
 
       <div id="overlay" class="overlay hidden">
         <div class="overlay-box">
-          <p id="overlay-title">GAME OVER</p>
-          <p id="overlay-score"></p>
-          <button id="restart-btn">Reiniciar</button>
+
+          <!-- PAUSA -->
+          <div id="pause-content" class="overlay-section">
+            <p class="overlay-title">PAUSA</p>
+            <div class="pause-buttons">
+              <button id="btn-resume" class="pause-btn pause-btn--primary">Reanudar</button>
+              <button id="btn-restart-pause" class="pause-btn">Reiniciar</button>
+              <button id="btn-show-controls" class="pause-btn">Ver controles</button>
+            </div>
+            <div id="pause-controls" class="pause-controls-detail hidden">
+              <ul>
+                <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+                <li><kbd>↑</kbd> rotar</li>
+                <li><kbd>↓</kbd> bajar</li>
+                <li><kbd>Space</kbd> caída</li>
+                <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
+              </ul>
+            </div>
+            <div class="level-picker">
+              <span class="level-picker-label">NIVEL INICIAL</span>
+              <div class="level-picker-row">
+                <button id="level-dec" class="level-btn" aria-label="Disminuir nivel">−</button>
+                <span id="start-level-val" class="level-val">1</span>
+                <button id="level-inc" class="level-btn" aria-label="Aumentar nivel">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME OVER -->
+          <div id="gameover-content" class="overlay-section hidden">
+            <p id="overlay-title" class="overlay-title">GAME OVER</p>
+            <p id="overlay-score"></p>
+            <button id="restart-btn">Reiniciar</button>
+          </div>
+
         </div>
       </div>
     </div>

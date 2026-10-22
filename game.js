@@ -36,13 +36,21 @@ const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
-const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const themeLabel = document.getElementById('theme-label');
+const pauseContent      = document.getElementById('pause-content');
+const gameoverContent   = document.getElementById('gameover-content');
+const btnResume         = document.getElementById('btn-resume');
+const btnRestartPause   = document.getElementById('btn-restart-pause');
+const btnShowControls   = document.getElementById('btn-show-controls');
+const pauseControlsList = document.getElementById('pause-controls');
+const levelDecBtn       = document.getElementById('level-dec');
+const levelIncBtn       = document.getElementById('level-inc');
+const startLevelVal     = document.getElementById('start-level-val');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, startLevel;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -108,7 +116,7 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
+    level = Math.max(startLevel, Math.floor(lines / 10) + 1);
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
@@ -238,25 +246,29 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+function showOverlay(mode) {
+  pauseContent.classList.toggle('hidden', mode !== 'pause');
+  gameoverContent.classList.toggle('hidden', mode !== 'gameover');
+  overlay.classList.remove('hidden');
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
-  overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
-  overlay.classList.remove('hidden');
+  showOverlay('gameover');
 }
 
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    showOverlay('pause');
   }
 }
 
@@ -277,25 +289,29 @@ function loop(ts) {
 }
 
 function init() {
+  startLevel = startLevel || 1;
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (startLevel - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
+  pauseControlsList.classList.add('hidden');
+  btnShowControls.textContent = 'Ver controles';
   overlay.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
+  startLevelVal.textContent = startLevel;
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { e.preventDefault(); togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -321,6 +337,23 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+btnResume.addEventListener('click', togglePause);
+
+btnRestartPause.addEventListener('click', init);
+
+btnShowControls.addEventListener('click', () => {
+  const isHidden = pauseControlsList.classList.toggle('hidden');
+  btnShowControls.textContent = isHidden ? 'Ver controles' : 'Ocultar controles';
+});
+
+levelDecBtn.addEventListener('click', () => {
+  if (startLevel > 1) { startLevel--; startLevelVal.textContent = startLevel; }
+});
+
+levelIncBtn.addEventListener('click', () => {
+  if (startLevel < 10) { startLevel++; startLevelVal.textContent = startLevel; }
+});
+
 themeToggle.addEventListener('click', () => {
   const isLight = document.documentElement.dataset.theme === 'light';
   applyTheme(isLight ? 'dark' : 'light', true);
@@ -331,4 +364,5 @@ let savedTheme = 'dark';
 try { savedTheme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'; } catch (e) {}
 applyTheme(savedTheme, false);
 
+startLevel = 1;
 init();
